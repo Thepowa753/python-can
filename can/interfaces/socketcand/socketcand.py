@@ -43,7 +43,7 @@ def convert_can_message_to_ascii_message(can_message: can.Message) -> str:
     # Note: seems like we cannot add CANFD_BRS (bitrate_switch) and CANFD_ESI (error_state_indicator) flags
     data = can_message.data
     length = can_message.dlc
-    bytes_string = " ".join("{:x}".format(x) for x in data[0:length])
+    bytes_string = " ".join(f"{x:x}" for x in data[0:length])
     return f"< send {can_id:X} {length:X} {bytes_string} >"
 
 
@@ -93,7 +93,7 @@ class SocketCanDaemonBus(can.BusABC):
             ready_receive_sockets, _, _ = select.select(
                 [self.__socket], [], [], timeout
             )
-        except socket.error as exc:
+        except OSError as exc:
             # something bad happened (e.g. the interface went down)
             log.error(f"Failed to receive: {exc}")
             raise can.CanError(f"Failed to receive: {exc}")

@@ -25,7 +25,7 @@ class SqliteReader(MessageReader):
     This class can be iterated over or used to fetch all messages in the
     database with :meth:`~SqliteReader.read_all`.
 
-    Calling :func:`~builtin.len` on this object might not run in constant time.
+    Calling :func:`len` on this object might not run in constant time.
 
     :attr str table_name: the name of the database table used for storing the messages
 
@@ -36,7 +36,6 @@ class SqliteReader(MessageReader):
         self,
         file: StringPathLike,
         table_name: str = "messages",
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """
@@ -138,7 +137,6 @@ class SqliteWriter(MessageWriter, BufferedReader):
         self,
         file: StringPathLike,
         table_name: str = "messages",
-        *args: Any,
         **kwargs: Any,
     ) -> None:
         """

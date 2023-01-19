@@ -61,10 +61,10 @@ def load_file_config(
     else:
         config.read(path)
 
-    _config = {}
+    _config: Dict[str, str] = {}
 
     if config.has_section(section):
-        _config.update(dict((key, val) for key, val in config.items(section)))
+        _config.update(config.items(section))
 
     return _config
 
@@ -233,33 +233,16 @@ def _create_bus_config(config: Dict[str, Any]) -> typechecking.BusConfig:
     if "data_bitrate" in config:
         config["data_bitrate"] = int(config["data_bitrate"])
 
-    # Create bit timing configuration if given
-    timing_conf = {}
-    for key in (
-        "f_clock",
-        "brp",
-        "tseg1",
-        "tseg2",
-        "sjw",
-        "nof_samples",
-        "btr0",
-        "btr1",
-    ):
-        if key in config:
-            timing_conf[key] = int(str(config[key]), base=0)
-            del config[key]
-    if timing_conf:
-        timing_conf["bitrate"] = config["bitrate"]
-        config["timing"] = can.BitTiming(**timing_conf)
-
     return cast(typechecking.BusConfig, config)
 
 
 def set_logging_level(level_name: str) -> None:
     """Set the logging level for the `"can"` logger.
 
-    :param level_name: One of: `'critical'`, `'error'`, `'warning'`, `'info'`,
-    `'debug'`, `'subdebug'`, or the value `None` (=default). Defaults to `'debug'`.
+    :param level_name:
+        One of: `'critical'`, `'error'`, `'warning'`, `'info'`,
+        `'debug'`, `'subdebug'`, or the value :obj:`None` (=default).
+        Defaults to `'debug'`.
     """
     can_logger = logging.getLogger("can")
 
@@ -312,25 +295,47 @@ def channel2int(channel: Optional[typechecking.Channel]) -> Optional[int]:
     return None
 
 
-def deprecated_args_alias(**aliases):
+def deprecated_args_alias(  # type: ignore
+    deprecation_start: str, deprecation_end: Optional[str] = None, **aliases
+):
     """Allows to rename/deprecate a function kwarg(s) and optionally
     have the deprecated kwarg(s) set as alias(es)
 
-    Example:
+    Example::
 
-        @deprecated_args_alias(oldArg="new_arg", anotherOldArg="another_new_arg")
+        @deprecated_args_alias("1.2.0", oldArg="new_arg", anotherOldArg="another_new_arg")
         def library_function(new_arg, another_new_arg):
             pass
 
-        @deprecated_args_alias(oldArg="new_arg", obsoleteOldArg=None)
+        @deprecated_args_alias(
+            deprecation_start="1.2.0",
+            deprecation_end="3.0.0",
+            oldArg="new_arg",
+            obsoleteOldArg=None,
+        )
         def library_function(new_arg):
             pass
+
+    :param deprecation_start:
+        The *python-can* version, that introduced the :class:`DeprecationWarning`.
+    :param deprecation_end:
+        The *python-can* version, that marks the end of the deprecation period.
+    :param aliases:
+        keyword arguments, that map the deprecated argument names
+        to the new argument names or ``None``.
+
     """
 
     def deco(f):
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
-            _rename_kwargs(f.__name__, kwargs, aliases)
+            _rename_kwargs(
+                func_name=f.__name__,
+                start=deprecation_start,
+                end=deprecation_end,
+                kwargs=kwargs,
+                aliases=aliases,
+            )
             return f(*args, **kwargs)
 
         return wrapper
@@ -339,21 +344,35 @@ def deprecated_args_alias(**aliases):
 
 
 def _rename_kwargs(
-    func_name: str, kwargs: Dict[str, str], aliases: Dict[str, str]
+    func_name: str,
+    start: str,
+    end: Optional[str],
+    kwargs: Dict[str, str],
+    aliases: Dict[str, str],
 ) -> None:
     """Helper function for `deprecated_args_alias`"""
     for alias, new in aliases.items():
         if alias in kwargs:
+            deprecation_notice = (
+                f"The '{alias}' argument is deprecated since python-can v{start}"
+            )
+            if end:
+                deprecation_notice += (
+                    f", and scheduled for removal in python-can v{end}"
+                )
+            deprecation_notice += "."
+
             value = kwargs.pop(alias)
             if new is not None:
-                warnings.warn(f"{alias} is deprecated; use {new}", DeprecationWarning)
+                deprecation_notice += f" Use '{new}' instead."
+
                 if new in kwargs:
                     raise TypeError(
-                        f"{func_name} received both {alias} (deprecated) and {new}"
+                        f"{func_name} received both '{alias}' (deprecated) and '{new}'."
                     )
                 kwargs[new] = value
-            else:
-                warnings.warn(f"{alias} is deprecated", DeprecationWarning)
+
+            warnings.warn(deprecation_notice, DeprecationWarning)
 
 
 def time_perfcounter_correlation() -> Tuple[float, float]:

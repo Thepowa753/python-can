@@ -55,7 +55,7 @@ class UdpMulticastBus(BusABC):
     .. warning::
         This interface does not make guarantees on reliable delivery and message ordering, and also does not
         implement rate limiting or ID arbitration/prioritization under high loads. Please refer to the section
-        :ref:`other_virtual_interfaces` for more information on this and a comparison to alternatives.
+        :ref:`virtual_interfaces_doc` for more information on this and a comparison to alternatives.
 
     :param channel: A multicast IPv4 address (in `224.0.0.0/4`) or an IPv6 address (in `ff00::/8`).
                     This defines which version of IP is used. See
@@ -332,7 +332,7 @@ class GeneralPurposeUdpMulticastBus:
             # get all sockets that are ready (can be a list with a single value
             # being self.socket or an empty list if self.socket is not ready)
             ready_receive_sockets, _, _ = select.select([self._socket], [], [], timeout)
-        except socket.error as exc:
+        except OSError as exc:
             # something bad (not a timeout) happened (e.g. the interface went down)
             raise can.CanOperationError(
                 f"Failed to wait for IP/UDP socket: {exc}"

@@ -1,18 +1,3 @@
-"""
-logger.py logs CAN traffic to the terminal and to a file on disk.
-
-    logger.py can0
-
-See candump in the can-utils package for a C implementation.
-Efficient filtering has been implemented for the socketcan backend.
-For example the command
-
-    logger.py can0 F03000:FFF000
-
-Will filter for can frames with a can_id containing XXF03XXX.
-
-Dynamic Controls 2010
-"""
 import re
 import sys
 import argparse
@@ -73,7 +58,7 @@ def _create_base_argument_parser(parser: argparse.ArgumentParser) -> None:
 def _append_filter_argument(
     parser: Union[
         argparse.ArgumentParser,
-        argparse._ArgumentGroup,  # pylint: disable=protected-access
+        argparse._ArgumentGroup,
     ],
     *args: str,
     **kwargs: Any,
@@ -193,9 +178,10 @@ def main() -> None:
         "--file_size",
         dest="file_size",
         type=int,
-        help="Maximum file size in bytes (or for the case of blf, maximum "
-        "buffer size before compression and flush to file). Rotate log "
-        "file when size threshold is reached.",
+        help="Maximum file size in bytes. Rotate log file when size threshold "
+        "is reached. (The resulting file sizes will be consistent, but are not "
+        "guaranteed to be exactly what is specified here due to the rollover "
+        "conditions being logger implementation specific.)",
         default=None,
     )
 
